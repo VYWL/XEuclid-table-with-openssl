@@ -3,80 +3,19 @@
 #include <openssl/bn.h>
 #define NBITS 256
 
-/*
-    Simple Reference for Me
-
-    * BN_div(dv, rm, m, d, ctx) 
-        => dv := m / d
-    
-    * BN_mul(r, a, b, ctx)
-        => r  := a * b
-    
-    * BN_add(r, a, b) # BN_sub (same)
-        => r  := a + b
-
-*/
-
 void printBN(const char *msg, BIGNUM *a) {
 	char *number_str = BN_bn2dec(a);
 	printf("%s %s\n", msg, number_str);
 	OPENSSL_free(number_str);
 }
 
-void BN_one_line_operation (BIGNUM *n, BIGNUM *n_1, BIGNUM * n_2, BIGNUM * q, BN_CTX *ctx) {
-    BIGNUM *tempMul = BN_new();
+void BN_one_line_operation (BIGNUM *n, BIGNUM *n_1, BIGNUM * n_2, BIGNUM * q, BN_CTX *ctx);
+void BN_one_line_copy (BIGNUM *n, BIGNUM *n_1, BIGNUM * n_2);
 
-    BN_mul(tempMul, n_2, q, ctx);
-    BN_sub(n, n_1, tempMul);
-
-	if(tempMul != NULL) BN_free(tempMul);
-}
-
-void BN_one_line_copy (BIGNUM *n, BIGNUM *n_1, BIGNUM * n_2) {
-    BN_copy(n_1, n_2);
-    BN_copy(n_2, n);
-}
-
-void printInit() {
-    printf("=-----------------------------------------------------------=\n");
-    printf("|                       X-Euclid-Table                      |\n");
-    printf("=-----------------------------------------------------------=\n");
-    printf("|  q  | r_1 | r_2 |  r  | x_1 | x_2 |  x  | y_1 | y_2 |  y  |\n");
-    printf("=-----------------------------------------------------------=\n");
-}
-
+void printInit();
 void printLevel(BIGNUM *q, BIGNUM *r, BIGNUM *r_1, BIGNUM *r_2
               , BIGNUM *x, BIGNUM *x_1, BIGNUM *x_2
-              , BIGNUM *y, BIGNUM *y_1, BIGNUM *y_2, int flag = 0) {
-
-	char *_q = BN_bn2dec(q);
-	char *_r = BN_bn2dec(r);
-	char *_r_1 = BN_bn2dec(r_1);
-	char *_r_2 = BN_bn2dec(r_2);
-	char *_x = BN_bn2dec(x);
-	char *_x_1 = BN_bn2dec(x_1);
-	char *_x_2 = BN_bn2dec(x_2);
-	char *_y = BN_bn2dec(y);
-	char *_y_1 = BN_bn2dec(y_1);
-	char *_y_2 = BN_bn2dec(y_2);
-
-    if(!strcmp(_r, "0")) flag = 2;
-
-    if(flag == 1) {
-        printf("| %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s |  <=  Init\n"
-                ,  _q, _r_1, _r_2, _r, _x_1, _x_2, _x, _y_1, _y_2, _y);
-    } 
-    else if(flag == 2){
-        printf("| %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s |  <=  Finished\n"
-                ,  _q, _r_1, _r_2, _r, _x_1, _x_2, _x, _y_1, _y_2, _y);
-    }
-    else {
-        printf("| %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s |\n"
-                ,  _q, _r_1, _r_2, _r, _x_1, _x_2, _x, _y_1, _y_2, _y);
-    }
-    
-    printf("=-----------------------------------------------------------=\n");
-}
+              , BIGNUM *y, BIGNUM *y_1, BIGNUM *y_2, int flag);
 
 BIGNUM *XEuclid (BIGNUM *x, BIGNUM *y, BIGNUM * input_a, BIGNUM * input_b) {
     BN_CTX *ctx = BN_CTX_new();
@@ -91,7 +30,7 @@ BIGNUM *XEuclid (BIGNUM *x, BIGNUM *y, BIGNUM * input_a, BIGNUM * input_b) {
     
     BIGNUM *s = BN_new();
     BIGNUM *t;
-    int swaped = 0;
+    int swapFlag = 0;
 
     BN_copy(r_1, input_a);
     BN_copy(r_2, input_b);
@@ -100,7 +39,7 @@ BIGNUM *XEuclid (BIGNUM *x, BIGNUM *y, BIGNUM * input_a, BIGNUM * input_b) {
         t = r_1;
         r_1 = r_2;
         r_2 = t;
-        swaped = 1;
+        swapFlag = 1;
     }
 
     BN_one(x_1); BN_zero(x_2);
@@ -109,13 +48,13 @@ BIGNUM *XEuclid (BIGNUM *x, BIGNUM *y, BIGNUM * input_a, BIGNUM * input_b) {
     if(!BN_div(q, r, r_1, r_2, ctx))
             goto err;
 
-    printInit();
+    // printInit();
 
     BN_one_line_operation(r, r_1, r_2, q, ctx);
     BN_one_line_operation(x, x_1, x_2, q, ctx);
     BN_one_line_operation(y, y_1, y_2, q, ctx);
     
-    printLevel(q, r, r_1, r_2, x, x_1, x_2, y, y_1, y_2, 1);
+    // printLevel(q, r, r_1, r_2, x, x_1, x_2, y, y_1, y_2, 1);
 
     while(!BN_is_zero(r)) {
         BN_one_line_copy(r, r_1, r_2);
@@ -129,10 +68,10 @@ BIGNUM *XEuclid (BIGNUM *x, BIGNUM *y, BIGNUM * input_a, BIGNUM * input_b) {
         BN_one_line_operation(x, x_1, x_2, q, ctx);
         BN_one_line_operation(y, y_1, y_2, q, ctx);
         
-        printLevel(q, r, r_1, r_2, x, x_1, x_2, y, y_1, y_2);
+        // printLevel(q, r, r_1, r_2, x, x_1, x_2, y, y_1, y_2, 2);
     }
 
-    if(swaped == 1) {
+    if(swapFlag == 1) {
         t = x_1;
         x_1 = y_1;
         y_1 = t;
@@ -187,3 +126,58 @@ int main (int argc, char *argv[]) {
 
     return 0;
 } 
+
+// For Debug
+
+void printLevel(BIGNUM *q, BIGNUM *r, BIGNUM *r_1, BIGNUM *r_2
+              , BIGNUM *x, BIGNUM *x_1, BIGNUM *x_2
+              , BIGNUM *y, BIGNUM *y_1, BIGNUM *y_2, int flag) {
+
+	char *_q = BN_bn2dec(q);
+	char *_r = BN_bn2dec(r);
+	char *_r_1 = BN_bn2dec(r_1);
+	char *_r_2 = BN_bn2dec(r_2);
+	char *_x = BN_bn2dec(x);
+	char *_x_1 = BN_bn2dec(x_1);
+	char *_x_2 = BN_bn2dec(x_2);
+	char *_y = BN_bn2dec(y);
+	char *_y_1 = BN_bn2dec(y_1);
+	char *_y_2 = BN_bn2dec(y_2);
+
+    if(flag == 1) {
+        printf("| %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s |  <=  Init\n"
+                ,  _q, _r_1, _r_2, _r, _x_1, _x_2, _x, _y_1, _y_2, _y);
+    } 
+    else if(flag == 2 && !strcmp(_r, "0")){
+        printf("| %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s |  <=  Finished\n"
+                ,  _q, _r_1, _r_2, _r, _x_1, _x_2, _x, _y_1, _y_2, _y);
+    }
+    else {
+        printf("| %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s | %3s |\n"
+                ,  _q, _r_1, _r_2, _r, _x_1, _x_2, _x, _y_1, _y_2, _y);
+    }
+    
+    printf("=-----------------------------------------------------------=\n");
+}
+
+void printInit() {
+    printf("=-----------------------------------------------------------=\n");
+    printf("|                       X-Euclid-Table                      |\n");
+    printf("=-----------------------------------------------------------=\n");
+    printf("|  q  | r_1 | r_2 |  r  | x_1 | x_2 |  x  | y_1 | y_2 |  y  |\n");
+    printf("=-----------------------------------------------------------=\n");
+}
+
+void BN_one_line_copy (BIGNUM *n, BIGNUM *n_1, BIGNUM * n_2) {
+    BN_copy(n_1, n_2);
+    BN_copy(n_2, n);
+}
+
+void BN_one_line_operation (BIGNUM *n, BIGNUM *n_1, BIGNUM * n_2, BIGNUM * q, BN_CTX *ctx) {
+    BIGNUM *tempMul = BN_new();
+
+    BN_mul(tempMul, n_2, q, ctx);
+    BN_sub(n, n_1, tempMul);
+
+	if(tempMul != NULL) BN_free(tempMul);
+}
